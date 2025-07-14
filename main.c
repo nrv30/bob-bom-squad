@@ -12,7 +12,6 @@ typedef struct Circle {
 typedef struct Timer {
     float time;
     float length;
-    bool on;
 } Timer;
 
 // true if the timer is up
@@ -26,6 +25,8 @@ void reset_timer(Timer* timer, float length) {
     timer->length = length;
     timer->time = 0;
 };
+
+void compute_velocity(Vector2* ball_vel, Vector2 mspos, Circle zone);
 
 int main(void)
 {
@@ -54,9 +55,9 @@ int main(void)
     const int speed_multiplyer = 10;
 
     const float shoot_cooldown_length = .3;
-    bool click = false;
+    bool ball_clicked = false;
     bool shot = false;
-    bool computed_vel = false;
+    bool was_vel_computed = false;
     Timer shoot_cooldown = {0};
     // Main game loop
     while (!WindowShouldClose())
@@ -65,31 +66,25 @@ int main(void)
         //----------------------------------------------------------------------------------
         dt = GetFrameTime();
         Vector2 mspos = GetMousePosition();
-        if (!shot && !click) {
-            if (checkCollisionPointCircle(ball.pos.x, ball.pos.y, ball.r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                click = true;
+        if (!shot) {
+            if (CheckCollisionPointCircle(mspos, ball.pos, ball.r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                ball_clicked = true;
+            }else if (!shot && ball_clicked && !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                shot = true;
+                reset_timer(&shoot_cooldown, .3);
+                ball_clicked = false;
             }
         } else {
-            if (!shot && !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                shot = true;
-            }
-
-            if (shot && !computed_vel) {
+            
+            if (!was_vel_computed) {
                 compute_velocity(&ball_vel, mspos, zone);
-                computed_vel = true;
+                was_vel_computed = true;
             }
-            if (CheckCollisionPointCircle(mspos, zone.pos, zone.r) && !checked) {
-                checked = true;
-                
-                // TraceLog(LOG_DEBUG, TextFormat("X:%f, Y:%f", norm.x, norm.y)); 
+            bool state = update_timer(&shoot_cooldown, dt);
+            if (state) {
+                shot = false;
+                was_vel_computed = false;
             }
-        }
-
-        if (shot) {
-            reset_timer(&shoot_cooldown, shoot_cooldown_length);
-        }
-        if (shoot_cooldown.on) {
-            shot = !(update_timer(&shoot_cooldown, dt));
         }
 
         // Draw
@@ -97,13 +92,11 @@ int main(void)
         BeginDrawing();
 
             ClearBackground(RAYWHITE);
-
-            if (click && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                DrawLine(ball.pos.x, ball.pos.y, mspos.x, mspos.y, GREEN);
-            }
-
             DrawCircleLines(zone.pos.x, zone.pos.y, zone.r, BLACK);
-            if(checked) {
+
+            if (!shot && ball_clicked) {
+                DrawLine(ball.pos.x, ball.pos.y, mspos.x, mspos.y, GREEN);
+            } else if (shot) {
                 ball.pos.x += ball_vel.x * GetFrameTime() * 100;
                 ball.pos.y += ball_vel.y * GetFrameTime() * 100;
             }
