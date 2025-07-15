@@ -3,7 +3,6 @@
 #include <math.h>
 #include <stdbool.h>
 
-
 typedef struct Circle {
     float r;
     struct Vector2 pos;
@@ -69,7 +68,7 @@ int main(void)
         if (!shot) {
             if (CheckCollisionPointCircle(mspos, ball.pos, ball.r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 ball_clicked = true;
-            }else if (!shot && ball_clicked && !IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            }else if (!shot && ball_clicked && !IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
                 shot = true;
                 reset_timer(&shoot_cooldown, .3);
                 ball_clicked = false;
